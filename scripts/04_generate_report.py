@@ -11,7 +11,7 @@ import os
 import sys
 import glob
 import xmltodict
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 def parse_nmap_xml(xml_file):
@@ -110,7 +110,7 @@ def generate_report(log_dir, output_file, input_data=None):
     """Генерация итогового отчета"""
     
     report = {
-        'scan_date': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'scan_date': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'scan_info': {
             'tool': 'recon-port-scanner',
             'version': '1.0.0'
@@ -215,7 +215,15 @@ if __name__ == '__main__':
     
     input_data = None
     if input_json and os.path.exists(input_json):
-        with open(input_json, 'r') as f:
-            input_data = json.load(f)
+        # Проверяем, является ли файл JSON
+        if input_json.endswith('.json'):
+            try:
+                with open(input_json, 'r') as f:
+                    input_data = json.load(f)
+            except json.JSONDecodeError:
+                print(f"Warning: Could not parse {input_json} as JSON, skipping input data")
+        else:
+            # Если это не JSON файл (например, .txt), игнорируем его
+            print(f"Info: Input file {input_json} is not JSON, will auto-detect IPs from logs")
     
     generate_report(log_dir, output_file, input_data)
