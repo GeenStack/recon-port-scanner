@@ -67,7 +67,7 @@ elif [ "$SCANNER" = "nmap" ]; then
     
     # Извлечение открытых портов
     if [ -f "${LOG_PREFIX}_nmap.gnmap" ]; then
-        grep "Ports:" "${LOG_PREFIX}_nmap.gnmap" | sed 's/.*Ports: //g' | tr ',' '\n' | grep "open" | cut -d'/' -f1 | sort -n | uniq > "${LOG_PREFIX}_open_ports.txt" || true
+        grep "Ports:" "${LOG_PREFIX}_nmap.gnmap" | sed 's/.*Ports: //g' | tr ',' '\n' | grep "open" | cut -d'/' -f1 | tr -d ' ' | sort -n | uniq > "${LOG_PREFIX}_open_ports.txt" || true
     fi
 else
     echo "Error: Unknown scanner '$SCANNER'. Use 'masscan' or 'nmap'"

@@ -4,6 +4,9 @@
 
 set -e
 
+# Определение директории скриптов
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Загрузка переменных окружения
 if [ -f /app/.env ]; then
     export $(cat /app/.env | grep -v '^#' | xargs)
@@ -89,7 +92,7 @@ for IP in $IPS; do
     
     # Этап 1: Быстрое сканирование портов
     echo "[Stage 1/4] Fast port scan..."
-    /app/scripts/01_fast_scan.sh "$IP" "$FAST_SCANNER" "$PORT_RANGE" "$FORCE_SCAN_NO_PING" "$LOG_DIR" "$MASSCAN_RATE" || {
+    "$SCRIPT_DIR/01_fast_scan.sh" "$IP" "$FAST_SCANNER" "$PORT_RANGE" "$FORCE_SCAN_NO_PING" "$LOG_DIR" "$MASSCAN_RATE" || {
         echo "Warning: Fast scan failed for $IP"
         continue
     }
@@ -104,7 +107,7 @@ for IP in $IPS; do
     fi
     
     # Преобразование списка портов в формат для nmap (через запятую)
-    PORTS=$(cat "$OPEN_PORTS_FILE" | tr '\n' ',' | sed 's/,$//')
+    PORTS=$(cat "$OPEN_PORTS_FILE" | tr -d ' ' | tr '\n' ',' | sed 's/,$//')
     
     if [ -z "$PORTS" ]; then
         echo "No open ports found for $IP, skipping detailed scans"
@@ -115,13 +118,13 @@ for IP in $IPS; do
     
     # Этап 2: Детальное сканирование с определением версий
     echo "[Stage 2/4] Detailed scan with version detection..."
-    /app/scripts/02_detailed_scan.sh "$IP" "$PORTS" "$USE_VULNERS" "$FORCE_SCAN_NO_PING" "$LOG_DIR" || {
+    "$SCRIPT_DIR/02_detailed_scan.sh" "$IP" "$PORTS" "$USE_VULNERS" "$FORCE_SCAN_NO_PING" "$LOG_DIR" || {
         echo "Warning: Detailed scan failed for $IP"
     }
     
     # Этап 3: Сканирование с vuln скриптами
     echo "[Stage 3/4] Vulnerability scan..."
-    /app/scripts/03_vuln_scan.sh "$IP" "$PORTS" "$FORCE_SCAN_NO_PING" "$LOG_DIR" || {
+    "$SCRIPT_DIR/03_vuln_scan.sh" "$IP" "$PORTS" "$FORCE_SCAN_NO_PING" "$LOG_DIR" || {
         echo "Warning: Vulnerability scan failed for $IP"
     }
     
@@ -135,7 +138,7 @@ echo "[Stage 4/4] Generating final report..."
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT_FILE="$OUTPUT_DIR/port_scan_report_${TIMESTAMP}.json"
 
-python3 /app/scripts/04_generate_report.py "$LOG_DIR" "$OUTPUT_FILE" "$INPUT_FILE" || {
+python3 "$SCRIPT_DIR/04_generate_report.py" "$LOG_DIR" "$OUTPUT_FILE" "$INPUT_FILE" || {
     echo "Error: Failed to generate report"
     exit 1
 }
