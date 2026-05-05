@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  port-scanner:
+    build: .
+    container_name: recon-port-scanner
+    network_mode: host
+    privileged: true
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    environment:
+      - FAST_SCANNER=${FAST_SCANNER:-masscan}
+      - USE_VULNERS=${USE_VULNERS:-true}
+      - FORCE_SCAN_NO_PING=${FORCE_SCAN_NO_PING:-false}
+      - MASSCAN_RATE=${MASSCAN_RATE:-1000}
+      - PORT_RANGE=${PORT_RANGE:-1-65535}
+      - LOG_DIR=/app/logs
+      - OUTPUT_DIR=/app/output
+      - INPUT_DIR=/app/input
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    stdin_open: true
+    tty: true
